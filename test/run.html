@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test functions </title>
+    <script>
+        const listDefault = [            
+            "ejemplo.test.js"            
+        ];
+    </script>
+<style> 
+    ul{
+        list-style: none;
+    }
+    li> i::before{
+        content: " ☞ ";
+        font-size: 150%;
+        font-weight: bold;
+        color:blue;
+    }       
+    li > i{            
+        display: inline-block;
+        padding: 0px 20px;
+        color: gray;
+        
+        
+    }
+    
+    li:not([class])::before{
+        content: " .";
+        border-radius: 10px;        
+        border: 2px solid #ccc;;  
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        color:#ccc;
+        transition: all;
+        animation: rotating 2s linear infinite;
+    }
+    li.fail::before{
+        content: " ❌ ";        
+    }
+    li.pass::before{
+        content: " ✅ ";            
+    }
+    @keyframes rotating {
+    from {
+        -ms-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    to {
+        -ms-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+    }
+</style>    
+</head>
+<body>
+    
+</body>
+
+<script>
+    (async()=>{
+        let list = listDefault;
+        await fetch("run.list.json").then(s=>s.json()).then(json=>{
+            if(json){
+                list = json;
+            }
+        })
+    
+        for (const file of list) {
+            await new Promise((resolve,reject) => {
+                const script = document.createElement("script");
+                script.src = "./"+file;
+                script.type = "module";
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });            
+        }
+        import("./test.js").then((module) => {
+            console.log(module.tests);
+            document.body.innerText = '';
+            const code = document.createElement("code");
+            const ul = document.createElement("ul");
+            const li = document.createElement("li");
+            const detail = document.createElement("i");
+            document.body.append(code);
+            code.append(ul);
+            for (const runTest of module.tests) {
+                (async(itemTest)=>{
+                    const nLi = li.cloneNode();
+                    ul.append(nLi);
+                    nLi.innerText = itemTest.title;
+                    try {
+                        
+                        await itemTest.callback();
+                        console.log( " ✅ :"+ itemTest.title );
+                        nLi.classList.add("pass");
+                        
+                    } catch (error) {
+                        console.log( " ❌ :"+ itemTest.title, error );
+                        nLi.classList.add("fail");                        
+                        const nDetail = detail.cloneNode();
+                        nDetail.innerText = error.message;
+                        nLi.append(nDetail);
+                        
+                    }
+                })(runTest);
+                
+            }
+        });            
+    })();
+    
+</script>
+</html>
